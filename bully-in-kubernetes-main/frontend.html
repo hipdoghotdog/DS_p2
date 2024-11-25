@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortune Cookies</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        h1 {
+            font-family: 'Rock Salt', cursive;
+            font-size: 3em;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        p {
+            font-size: 1.2em;
+            color: #666;
+            margin: 20px 0;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            font-size: 1.2em;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .fortune-container {
+            width: 50%;
+            background-color: white;
+            margin: 0 auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="fortune-container">
+        <h1>Fortune Cookies</h1>
+        <p id="fortuneText">"You must try, or hate yourself for not trying."</p>
+        <button id="cookieButton">New Fortune</button>
+    </div>
+
+    <script>
+        document.getElementById('cookieButton').onclick = async function() {
+            const response = await fetch('/get-fortune');
+            const fortune = await response.text();
+            document.getElementById('fortuneText').textContent = fortune;
+        };
+    </script>
+</html>
