@@ -60,7 +60,7 @@
 
     <script>
         document.getElementById('cookieButton').onclick = async function() {
-            const response = await fetch('/get-fortune');
+            const response = await fetch('/api/fortune');
             const fortune = await response.text();
             document.getElementById('fortuneText').textContent = fortune;
         };

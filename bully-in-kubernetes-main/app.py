@@ -24,7 +24,7 @@ async def election_endpoint(request):
 
 # Serve the HTML file
 async def index(request):
-    return web.FileResponse('./frontend.html')
+    return web.FileResponse('index.html')
 
 # Add a route for the frontend
 app.router.add_get('/', index)
