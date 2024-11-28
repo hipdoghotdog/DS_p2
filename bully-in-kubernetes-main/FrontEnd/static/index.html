@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -51,6 +52,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="fortune-container">
         <h1>Fortune Cookies</h1>
@@ -59,11 +61,12 @@
     </div>
 
     <script>
-        const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
-        document.getElementById('cookieButton').onclick = async function() {
+        const BACKEND_URL = 'http://bully-service:80';
+        document.getElementById('cookieButton').onclick = async function () {
             const response = await fetch('${BACKEND_URL}/api/fortune');
             const fortune = await response.text();
             document.getElementById('fortuneText').textContent = fortune;
         };
     </script>
+
 </html>

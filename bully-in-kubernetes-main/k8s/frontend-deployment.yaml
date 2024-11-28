@@ -20,10 +20,10 @@ spec:
           volumeMounts:
             - name: static-files
               mountPath: /usr/share/nginx/html
+          env:
+            - name: BACKEND_URL
+              value: "http://bully-service:80"
       volumes:
         - name: static-files
           configMap:
             name: frontend-configmap
-      env:
-        - name: BACKEND_URL
-          value: "http://frontend-service.default.svc.cluster.local:80"
