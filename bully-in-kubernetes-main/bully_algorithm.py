@@ -1,17 +1,13 @@
-import asyncio
-from aiohttp import web
 import os
+import asyncio
 import socket
 import random
 import aiohttp
-import requests
+from aiohttp import web
 
 POD_IP = str(os.environ['POD_IP'])
 WEB_PORT = int(os.environ['WEB_PORT'])
 POD_ID = random.randint(0, 100)
-
-# A dictionary to keep track of pod IDs and their states (whether they are the leader or not)
-pod_info = {}
 
 # Global variable to store the current leader pod
 leader = None
@@ -29,9 +25,9 @@ async def get_other_pods():
     return ip_list
 
 # The Bully algorithm to determine the leader
-async def run_bully():
-    global pod_info, leader
-    print("Running Bully algorithm...")
+async def start_election():
+    global leader
+    print("Starting Bully algorithm...")
 
     # Get all other pod IPs using the DNS lookup
     ip_list = await get_other_pods()
@@ -56,43 +52,11 @@ async def run_bully():
     else:
         print("No other pods found to elect a leader.")
 
-    pod_info = other_pods  # Update pod info with the elected leader
+# Function to return the current leader
+async def get_leader():
+    return web.json_response({"leader": leader})  # Ensure "web" is defined
 
 
 # Function to serve the pod ID when queried
 async def pod_id(request):
     return web.json_response({"pod_id": POD_ID})
-
-# Endpoint to trigger election
-async def election_endpoint(request):
-    print("Election started!")
-    await run_bully()
-    return web.json_response({"message": "Election started"})
-
-# Endpoint to get the current leader
-async def leader_endpoint(request):
-    if leader:
-        return web.json_response({"leader": leader})
-    else:
-        return web.json_response({"leader": "No leader elected"}, status=503)
-
-# Function to serve fortune cookies
-async def fortune_endpoint(request):
-    return web.json_response({"fortune": "You will have a great day!"})
-
-# Set up the app
-async def background_tasks(app):
-    task = asyncio.create_task(run_bully())
-    yield
-    task.cancel()
-    await task
-
-# Create and run the app
-app = web.Application()
-app.router.add_get('/pod_id', pod_id)
-app.router.add_post('/api/election', election_endpoint)
-app.router.add_get('/api/fortune', fortune_endpoint)
-app.router.add_get('/api/leader', leader_endpoint)  # Added route for current leader
-
-app.cleanup_ctx.append(background_tasks)
-web.run_app(app, host='0.0.0.0', port=WEB_PORT)
