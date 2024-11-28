@@ -59,8 +59,9 @@
     </div>
 
     <script>
+        const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
         document.getElementById('cookieButton').onclick = async function() {
-            const response = await fetch('/api/fortune');
+            const response = await fetch('${BACKEND_URL}/api/fortune');
             const fortune = await response.text();
             document.getElementById('fortuneText').textContent = fortune;
         };
