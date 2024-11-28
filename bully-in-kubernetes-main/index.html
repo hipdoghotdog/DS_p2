@@ -27,15 +27,14 @@
         }
 
         button {
-            background-color: #5170ba;
+            background-color: #4CAF50;
             color: white;
             font-size: 1.2em;
-            padding: 10px 20px; /* Smaller padding for smaller buttons */
+            padding: 15px 30px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            margin: 5px; /* Add margin between buttons */
         }
 
         button:hover {
@@ -49,11 +48,6 @@
             padding: 30px;
             border-radius: 10px;
             box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 20px; /* Add margin below for space between the fortune box and buttons */
-        }
-
-        .button-container {
-            margin-top: 20px; /* Adds some space from the fortune box */
         }
     </style>
 </head>
@@ -64,33 +58,11 @@
         <button id="cookieButton">New Fortune</button>
     </div>
 
-    <div class="button-container">
-        <button id="getLeaderButton">Get Current Leader</button>
-        <button id="startElectionButton">Start Election</button>
-    </div>
-
     <script>
         document.getElementById('cookieButton').onclick = async function() {
             const response = await fetch('/api/fortune');
             const fortune = await response.text();
             document.getElementById('fortuneText').textContent = fortune;
         };
-
-        // Optionally, handle the Get Current Leader and Start Election button functionality here
-        document.getElementById('getLeaderButton').onclick = async function() {
-            const response = await fetch('/api/leader');
-            const data = await response.json();
-            alert(`Current Leader: ${data.leader_id}`);
-        };
-
-        document.getElementById('startElectionButton').onclick = async function() {
-            const response = await fetch('/api/election', { method: 'POST' });
-            const data = await response.json();
-            alert(data.message);
-        };
     </script>
-</body>
 </html>
-
-
-
