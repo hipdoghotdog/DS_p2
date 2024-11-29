@@ -70,11 +70,6 @@
         <button id="cookieButton">New Fortune</button>
     </div>
 
-    <div class="button-container">
-        <button id="getLeaderButton">Get Current Leader</button>
-        <button id="startElectionButton">Start Election</button>
-    </div>
-
     <script>
         document.getElementById('cookieButton').onclick = async function () {
             const response = await fetch('/api/fortune');

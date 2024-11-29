@@ -1,5 +1,14 @@
 # bully-in-kubernetes
-A template to implement the Bully algorithm in Kubernetes.
+This project includes automated tests for the Kubernetes-based leader election implementation.
+
+### Prerequisites
+
+Ensure you have the following tools installed:
+- [Node.js](https://nodejs.org/)
+- [Kubernetes](https://kubernetes.io/docs/setup/)
+- [Docker](https://www.docker.com/get-started)
+- [kubectl](https://kubernetes.io/docs/reference/kubectl/overview/)
+- [Docker Desktop](https://www.docker.com/products/docker-desktop)
 
 ## Setup and Running the Application
 
@@ -90,4 +99,65 @@ kubectl delete -f ./k8s/
 - Ensure that Kubernetes is running properly on Docker Desktop and that `kubectl` is correctly configured.
 - The Ingress setup replaces the need for `kubectl port-forward`, making it easier to access the application via `localhost`.
 - If you encounter any issues with the Kubernetes setup or Docker build, check the logs for more specific error messages.
+
+---
+
+## Testing Instructions
+
+### Load Test
+
+1. Check the status of your pods:
+```
+kubectl get pods
+```
+2. Navigate to the `tests` directory:
+```
+cd tests
+```
+3. Run the load test:
+```
+node loadTest.js
+```
+4. After the test finishes, check the status of your pods again:
+```
+kubectl get pods
+```
+5. To return to the root directory:
+```
+cd ..
+```
+### Simulate Pod Failure
+1. Set up as before, but delete the deployment and apply the StatefulSet configuration:
+```
+kubectl delete -f ./k8s/deployment.yaml
+kubectl apply -f ./k8s/statefulset.yaml
+```
+2. Check the status of your pods:
+```
+kubectl get pods
+```
+3. kubectl get pods
+```
+kubectl get pods
+````
+kubectl delete pod <pod_name>
+```
+4. Watch the change in leadership in Docker Desktop.
+5. After simulating the pod failure, return to the previous setup by doing the following:
+- Delete the StatefulSet:
+```
+kubectl delete -f ./k8s/statefulset.yaml
+```
+- Apply the deployment configuration again:
+```
+kubectl apply -f ./k8s/deployment.yaml
+```
+
+---
+
+- Ensure that Kubernetes is running properly on Docker Desktop and that `kubectl` is correctly configured.
+- The Ingress setup replaces the need for `kubectl port-forward`, making it easier to access the application via `localhost`.
+- If you encounter any issues with the Kubernetes setup or Docker build, check the logs for more specific error messages.
+
+
 
