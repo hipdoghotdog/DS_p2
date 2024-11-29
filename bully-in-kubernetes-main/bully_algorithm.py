@@ -1,6 +1,6 @@
 import asyncio
 from asyncio import to_thread
-from aiohttp import web
+from aiohttp import web, ClientTimeout
 import os
 import socket
 import random
@@ -34,6 +34,10 @@ async def run_bully():
     #ip_list = []
     #other_pods = dict()
     while True:
+        
+        while not ACTIVE:
+            await asyncio.sleep(1)
+        
         print("Running bully")
         await asyncio.sleep(5) # wait for everything to be up
         
@@ -50,7 +54,7 @@ async def run_bully():
         
         global other_pods
         
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(timeout=ClientTimeout(total=5)) as session:
             for pod_ip in ip_list:
                 endpoint = '/pod_id'
                 url = 'http://' + str(pod_ip) + ':' + str(WEB_PORT) + endpoint
@@ -73,21 +77,28 @@ async def run_bully():
             await start_election()
         
         await asyncio.sleep(1)
-        random_pod = random.choice(ip_list)
-        print(f"Sending health check to pod {random_pod}.")
-        async with aiohttp.ClientSession() as session:
-            endpoint = '/health'
-            url = "http://" + str(random_pod) +":" +str(WEB_PORT) + str(endpoint)
-            try:
-                async with session.get(url) as response:
-                    if response.status == 200:
-                        print(f"Pod {other_pods[random_pod]} is healthy.")
-                    else:
-                        print(f"Pod {other_pods[random_pod]} is not healthy, status: {response.status}")
-                        if (other_pods[random_pod] == leader):
-                            await start_election()
-            except aiohttp.ClientError as e:
-                print(f"Error connecting to {url}: {e}")
+        
+        print(f"Sending health checks.")
+        if len(ip_list) < 15:
+            samples = len(ip_list)
+        elif len(ip_list) < 50:
+            samples = 15
+        else:
+            samples = 25
+        async with aiohttp.ClientSession(timeout=ClientTimeout(total=5)) as session:
+            for pod_ip in random.sample(ip_list,samples):
+                endpoint = '/health'
+                url = "http://" + str(pod_ip) +":" +str(WEB_PORT) + str(endpoint)
+                try:
+                    async with session.get(url) as response:
+                        if response.status == 200:
+                            print(f"Pod {other_pods[pod_ip]} is healthy.")
+                        else:
+                            print(f"Pod {other_pods[pod_ip]} is not healthy, status: {response.status}")
+                            if (other_pods[pod_ip]["pod_id"] == leader):
+                                await start_election()
+                except aiohttp.ClientError as e:
+                    print(f"Error connecting to {url}: {e}")
         
         # Sleep a bit, then repeat
         await asyncio.sleep(10)
@@ -107,7 +118,7 @@ async def start_election():
         await announce_leader()
         return
     
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=ClientTimeout(total=5)) as session:
         responses = []
         sorted_pods = dict(sorted(higher_priority_pods.items(), key=lambda item: item[1], reverse=True))
         total_pods = len(sorted_pods)
@@ -132,7 +143,8 @@ async def start_election():
             except aiohttp.ClientError as e:
                 print(f"Error connecting to {url}: {e}")
         
-        if not response:
+        
+        if len(responses) == 0:
             print("No responses from higher-priority pods. Declaring self as leader.")
             await announce_leader()
         else:
@@ -156,6 +168,8 @@ async def pod_id(request):
 # Health check endpoint
 
 async def health_check(request):
+    if not ACTIVE:
+        return web.json_response({"status": "unhealthy"}, status=503)
     return web.json_response({"status": "healthy"})
     
     
@@ -169,10 +183,12 @@ async def receive_election(request):
     incoming_pod_id = data.get("pod_id")
     print(f"Received election message from pod {incoming_pod_id}")
     
-    if POD_ID > incoming_pod_id:
+    if POD_ID > incoming_pod_id and ACTIVE:
         print(f"Current pod ({POD_ID}) has higher priority. Starting election")
         await start_election()
-    return web.Response(text="OK")
+        return web.Response(text="OK")
+    else:
+        return web.Response(text="", status=503)
     
 
 #POST /receive_coordinator
@@ -192,7 +208,7 @@ async def announce_leader():
     global leader
     leader = POD_ID
     elec_in_prog = False
-    async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession(timeout=ClientTimeout(total=5)) as session:
         for pod_ip in other_pods.keys():
             try:
                 url = 'http://' + str(pod_ip) + ":" + str(WEB_PORT) + '/receive_coordinator'
@@ -201,15 +217,27 @@ async def announce_leader():
             except aiohttp.ClientError as e:
                 print(f"Error connecting to {url}: {e}")
                 
-                
-
-async def disable_pod():
-    global ACTIVE
-    ACTIVE = False
-
-async def activate_pod():
+# POST /disable_leader
+async def disable_leader(request):
+    """Disable the leader pod to simulate failure."""
+    global ACTIVE, leader
+    if leader == POD_ID:
+        ACTIVE = False
+        print(f"Leader pod {POD_ID} disabled.")
+        return web.json_response({"message": f"Leader pod {POD_ID} has been disabled."})
+    else:
+        return web.json_response({"error": "This pod is not the leader."}, status=403)
+    
+# POST /reset
+async def reset(request):
+    """Reset the pod to an active state."""
     global ACTIVE
     ACTIVE = True
+    print(f"Pod {POD_ID} reset to active state.")
+    return web.json_response({"message": f"Pod {POD_ID} is now active."})
+    
+    
+
 
 async def background_tasks(app):
     task = asyncio.create_task((run_bully()))

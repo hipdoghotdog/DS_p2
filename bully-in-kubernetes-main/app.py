@@ -2,7 +2,7 @@ from aiohttp import web
 import asyncio
 from asyncio import to_thread
 from fortune_service import get_random_fortune
-from bully_algorithm import run_bully, receive_coordinator, background_tasks, pod_id, announce_leader, receive_election, leader_get, health_check, disable_pod, activate_pod
+from bully_algorithm import run_bully, receive_coordinator, background_tasks, pod_id, announce_leader, receive_election, leader_get, health_check, disable_leader, reset
 # Create an aiohttp web app
 app = web.Application()
 
@@ -23,6 +23,8 @@ async def election_endpoint(request):
     run_bully()
     return web.json_response({"message": "Election started"})
 
+
+
 # Serve the HTML file
 async def index(request):
     return web.FileResponse('index.html')
@@ -33,13 +35,16 @@ app.router.add_get('/', index)
 # Add routes to the app
 app.add_routes([
     web.get('/api/fortune', fortune_endpoint),
-    web.get('/api/leader', leader_get),
+    web.get('/api/leader', leader_endpoint),
     web.post('/api/election', election_endpoint),
     web.get('/pod_id',pod_id),
     web.post('/announce_leader',announce_leader),
     web.post('/receive_coordinator', receive_coordinator),
     web.post('/receive_election', receive_election),
-    web.get('/health', health_check)
+    web.get('/health', health_check),
+    web.post('/disable_leader', disable_leader),  # New endpoint
+    web.post('/reset', reset),  # New endpoint
+   
 ])
 
 if __name__ == '__main__':
