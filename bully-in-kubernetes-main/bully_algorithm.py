@@ -6,6 +6,7 @@ import socket
 import random
 import aiohttp
 import requests
+import random
 
 POD_IP = str(os.environ['POD_IP'])
 WEB_PORT = int(os.environ['WEB_PORT'])
@@ -64,8 +65,26 @@ async def run_bully():
         print(other_pods)
         await asyncio.sleep(2)
         higher_priority_pods = {ip: pod['id'] for ip, pod in other_pods.items() if pod['id'] > POD_ID}
-        if(higher_priority_pods and not elec_in_prog and not leader == POD_IP):
+        if(not higher_priority_pods and not elec_in_prog and not leader == POD_IP):
             await start_election()
+        
+        
+        await asyncio.sleep(5)
+        random_pod = random.choice(ip_list)
+        print(f"Sending health check to pod {random_pod}.")
+        async with aiohttp.ClientSession() as session:
+            endpoint = '/health'
+            url = "http://" + str(random_pod) +":" +str(WEB_PORT) + str(endpoint)
+            try:
+                async with session.get(url) as response:
+                    if response.status == 200:
+                        print(f"Pod {random_pod} is healthy.")
+                    else:
+                        print(f"Pod {random_pod} is not healthy, status: {response.status}")
+                        if (random_pod == leader):
+                            await start_election()
+            except aiohttp.ClientError as e:
+                print(f"Error connecting to {url}: {e}")
         
         # Sleep a bit, then repeat
         await asyncio.sleep(10)
@@ -85,7 +104,18 @@ async def start_election():
     
     async with aiohttp.ClientSession() as session:
         responses = []
-        for pod_ip, pod_id in higher_priority_pods.items():
+        sorted_pods = dict(sorted(higher_priority_pods.items(), key=lambda item: item[1], reverse=True))
+        total_pods = len(sorted_pods)
+        if total_pods <= 10:
+            bound = total_pods
+        elif total_pods <= 50:
+            bound = 10
+        elif total_pods <= 100:
+            bound = 20
+        else:
+            bound = total_pods // 10
+        selected_pods = list(sorted_pods.items())[:bound]
+        for pod_ip, pod_id in selected_pods:
             endpoint = '/receive_election'
             url = 'http://' + str(pod_ip) + ':' + str(WEB_PORT) + endpoint
             try:
@@ -114,6 +144,12 @@ async def leader_get(request):
 #GET /pod_id
 async def pod_id(request):
     return web.json_response({"id": POD_ID})
+
+# Health check endpoint
+
+async def health_check(request):
+    return web.json_response({"status": "healthy"})
+    
     
 #POST /receive_answer
 async def receive_answer(request):
