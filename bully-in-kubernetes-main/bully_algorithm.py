@@ -11,17 +11,25 @@ POD_IP = str(os.environ['POD_IP'])
 WEB_PORT = int(os.environ['WEB_PORT'])
 POD_ID = random.randint(0, 100)
 
+ip_list = []
+other_pods = dict()
+leader = None
+elec_in_prog = False
+
 async def setup_k8s():
     # If you need to do setup of Kubernetes, i.e. if using Kubernetes Python client
 	print("K8S setup completed")
  
 async def run_bully():
+    #ip_list = []
+    #other_pods = dict()
     while True:
         print("Running bully")
         await asyncio.sleep(5) # wait for everything to be up
         
         # Get all pods doing bully
-        ip_list = []
+        global ip_list
+        
         print("Making a DNS lookup to service")
         response = socket.getaddrinfo("bully-service",0,0,0,0)
         print("Get response from DNS")
@@ -36,7 +44,8 @@ async def run_bully():
         # Get ID's of other pods by sending a GET request to them
         await asyncio.sleep(random.randint(1, 5))
         
-        other_pods = dict()
+        global other_pods
+        
         async with aiohttp.ClientSession() as session:
             for pod_ip in ip_list:
                 endpoint = '/pod_id'
@@ -53,9 +62,48 @@ async def run_bully():
                 
         # Other pods in network
         print(other_pods)
+        await asyncio.sleep(2)
+        higher_priority_pods = {ip: pod['id'] for ip, pod in other_pods.items() if pod['id'] > POD_ID}
+        if(higher_priority_pods and not elec_in_prog and not leader == POD_IP):
+            await start_election()
         
         # Sleep a bit, then repeat
-        await asyncio.sleep(2)
+        await asyncio.sleep(10)
+        if(leader == None):
+            await start_election()
+        
+async def start_election():
+    print("Starting election")
+    global elec_in_prog
+    elec_in_prog = True
+    higher_priority_pods = {ip: pod['id'] for ip, pod in other_pods.items() if pod['id'] > POD_ID}
+    
+    if not higher_priority_pods:
+        print("No higher-priority pods found. Declaring self as leader.")
+        await announce_leader(POD_IP)
+        return
+    
+    async with aiohttp.ClientSession() as session:
+        responses = []
+        for pod_ip, pod_id in higher_priority_pods.items():
+            endpoint = '/receive_election'
+            url = 'http://' + str(pod_ip) + ':' + str(WEB_PORT) + endpoint
+            try:
+                async with session.post(url, json={"pod_id": POD_ID}) as response:
+                    if response.status == 200:
+                        responses.append(pod_ip)
+                    else:
+                        print(f"Failed to get response from {url}, status: {response.status}")
+            except aiohttp.ClientError as e:
+                print(f"Error connecting to {url}: {e}")
+        
+        if not response:
+            print("No responses from higher-priority pods. Declaring self as leader.")
+            await announce_leader(POD_IP)
+        else:
+            print("Higher-priority pods responded. Waiting for coordinator message.")
+                    
+    
     
 #GET /pod_id
 async def pod_id(request):
@@ -67,12 +115,41 @@ async def receive_answer(request):
 
 #POST /receive_election
 async def receive_election(request):
-    pass
+    data = await request.json()
+    incoming_pod_id = data.get("pod_id")
+    print(f"Received election message from pod {incoming_pod_id}")
+    
+    if POD_ID > incoming_pod_id:
+        print(f"Current pod ({POD_ID}) has higher priority. Starting election")
+        await start_election()
+    return web.Response(text="OK")
+    
 
 #POST /receive_coordinator
 async def receive_coordinator(request):
-    return None
-    pass
+    data = await request.json()
+    leader_ip = data.get("leader_ip")
+    print(f"Received coordinator message. Leader is: {leader_ip}")
+    global leader
+    leader = leader_ip
+    global elec_in_prog
+    elec_in_prog = False
+    return web.Response(text="OK")
+
+async def announce_leader(leader_ip):
+    print(f"Announcing leader: {leader_ip}")
+    global elec_in_prog
+    global leader
+    leader = POD_IP
+    elec_in_prog = False
+    async with aiohttp.ClientSession() as session:
+        for pod_ip in other_pods.keys():
+            try:
+                url = 'http://' + str(pod_ip) + ":" + str(WEB_PORT) + '/receive_coordinator'
+                print(f"Sending coordinator message to {url}")
+                await session.post(url, json={"leader_ip": leader_ip})
+            except aiohttp.ClientError as e:
+                print(f"Error connecting to {url}: {e}")
 
 async def background_tasks(app):
     task = asyncio.create_task((run_bully()))

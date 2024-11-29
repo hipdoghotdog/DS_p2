@@ -2,7 +2,7 @@ from aiohttp import web
 import asyncio
 from asyncio import to_thread
 from fortune_service import get_random_fortune
-from bully_algorithm import run_bully, receive_coordinator, background_tasks, pod_id
+from bully_algorithm import run_bully, receive_coordinator, background_tasks, pod_id, announce_leader, receive_election
 
 # Create an aiohttp web app
 app = web.Application()
@@ -36,7 +36,10 @@ app.add_routes([
     web.get('/api/fortune', fortune_endpoint),
     web.get('/api/leader', leader_endpoint),
     web.post('/api/election', election_endpoint),
-    web.get('/pod_id',pod_id)
+    web.get('/pod_id',pod_id),
+    web.post('/announce_leader',announce_leader),
+    web.post('/receive_coordinator', receive_coordinator),
+    web.post('/receive_election', receive_election)
 ])
 
 if __name__ == '__main__':
