@@ -73,10 +73,15 @@ To scale the number of replicas in the deployment, use the following command:
 ```
 kubectl scale deployment bully-app --replicas=<desired_number_of_replicas>
 ```
-### 9. Stopping the Application
-When you're done, you can stop the application by scaling the deployment to zero replicas:
+### 10. Stopping and Deleting the Application
+To stop the application and delete the deployment, use the following command:
 ```
-kubectl scale deployment bully-app --replicas=0
+kubectl delete -f ./k8s/deployment.yaml
+```
+To clean up everything created by Kubernetes (including the service, ingress, and deployment), use:
+
+```
+kubectl delete -f ./k8s/
 ```
 
 ---
