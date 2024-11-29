@@ -83,12 +83,12 @@ async def run_bully():
         await asyncio.sleep(1)
         
         print(f"Sending health checks.")
-        if len(ip_list) < 15:
+        if len(ip_list) < 5:
             samples = len(ip_list)
         elif len(ip_list) < 50:
-            samples = 15
+            samples = 10
         else:
-            samples = 25
+            samples = 15
         async with aiohttp.ClientSession(timeout=ClientTimeout(total=5)) as session:
             for pod_ip in random.sample(ip_list,samples):
                 endpoint = '/health'
@@ -146,7 +146,7 @@ async def start_election():
                         print(f"Failed to get response from {url}, status: {response.status}")
             except aiohttp.ClientError as e:
                 print(f"Error connecting to {url}: {e}")
-        
+        await asyncio.sleep(1)
         
         if len(responses) == 0:
             print("No responses from higher-priority pods. Declaring self as leader.")
@@ -194,6 +194,9 @@ async def receive_election(request):
     else:
         return web.Response(text="", status=503)
     
+async def sleep(i):
+    await asyncio.sleep(i)
+    return
 
 #POST /receive_coordinator
 async def receive_coordinator(request):
@@ -204,7 +207,8 @@ async def receive_coordinator(request):
     leader = leader_id
     global elec_in_prog
     elec_in_prog = False
-    return web.Response(text="OK")
+    await asyncio.sleep(1)
+    return web.Response(text="OK") 
 
 async def announce_leader():
     print(f"Announcing leader: {POD_ID}")
