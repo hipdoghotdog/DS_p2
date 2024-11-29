@@ -127,7 +127,7 @@ kubectl get pods
 ```
 cd ..
 ```
-### Simulate Pod Failure
+### Simulate Pod Failure 1
 1. Set up a deseired amount of pods and check the pods are running:
 ```
 kubectl get pods
@@ -143,6 +143,20 @@ kubectl delete pod <pod_name>
 ```
 4. A new pod will be created. Watch the change in leadership in Docker Desktop.
 
+### Simulate Pod failure 2 
+1. Setup the pods like explained earlier
+2. Instead of deleting pods we will be disabling the leader
+- Find which pod is the leader as described earlier
+- Either in the terminal or in docker desktop enter the pod's command line
+- Run this command
+    - curl -X POST http://<bully-app-x>:8080/disable_leader
+        - replace the 'x' with the relevant number of the pod
+3. Now the leader is disabled, observe the other pods
+- The pods run health checks on eachother regularly, this way they can discover the leader is disabled
+4. If you want to restore the pod
+- Run this command
+    - curl -X POST http://<bully-app-x>:8080/reset
+    - The pod should start an election and become leader again
 
 
 - Ensure that Kubernetes is running properly on Docker Desktop and that `kubectl` is correctly configured.
