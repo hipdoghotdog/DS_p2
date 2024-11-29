@@ -86,7 +86,7 @@
         document.getElementById('getLeaderButton').onclick = async function () {
             const response = await fetch('/api/leader');
             const data = await response.json();
-            alert(`Current Leader: ${data.leader_id}`);
+            alert(`Current Leader: ${data.textContent}`);
         };
 
         document.getElementById('startElectionButton').onclick = async function () {

@@ -2,7 +2,7 @@ from aiohttp import web
 import asyncio
 from asyncio import to_thread
 from fortune_service import get_random_fortune
-from bully_algorithm import run_bully, receive_coordinator, background_tasks, pod_id, announce_leader, receive_election
+from bully_algorithm import run_bully, receive_coordinator, background_tasks, pod_id, announce_leader, receive_election, leader_get
 
 # Create an aiohttp web app
 app = web.Application()
@@ -14,7 +14,7 @@ async def fortune_endpoint(request):
 
 async def leader_endpoint(request):
     """Return the current leader."""
-    leader_id = receive_coordinator()
+    leader_id = leader_get()
     if leader_id is None:
         return web.json_response({"error": "No leader elected"}, status=503)
     return web.json_response({"leader_id": leader_id})
@@ -34,7 +34,7 @@ app.router.add_get('/', index)
 # Add routes to the app
 app.add_routes([
     web.get('/api/fortune', fortune_endpoint),
-    web.get('/api/leader', leader_endpoint),
+    web.get('/api/leader', leader_get),
     web.post('/api/election', election_endpoint),
     web.get('/pod_id',pod_id),
     web.post('/announce_leader',announce_leader),

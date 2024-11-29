@@ -103,7 +103,13 @@ async def start_election():
         else:
             print("Higher-priority pods responded. Waiting for coordinator message.")
                     
-    
+
+async def leader_get(request):
+    if(not leader == None):
+        response_data = {"ip": leader, "id": other_pods.get(leader)}
+    else:
+        response_data = "No leader elected yet"
+    return web.json_response(response_data)
     
 #GET /pod_id
 async def pod_id(request):
