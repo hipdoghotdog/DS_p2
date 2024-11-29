@@ -20,9 +20,6 @@ other_pods = dict()
 leader = None
 elec_in_prog = False
 
-async def setup_k8s():
-    # If you need to do setup of Kubernetes, i.e. if using Kubernetes Python client
-	print("K8S setup completed")
  
 async def setup_pod_list():
     global ip_list
@@ -42,19 +39,10 @@ async def run_bully():
         
         # Get all pods doing bully
         global ip_list
+        print("Fetching all pods")
         await setup_pod_list()
-        print("Making a DNS lookup to service")
-        """""""""
-        response = socket.getaddrinfo("bully-service",0,0,0,0)
-        print(response)
-        print("Get response from DNS")
-        for result in response:
-            ip_list.append(result[-1][0])
-        ip_list = list(set(ip_list))
         
-        # Remove own POD ip from the list of pods
-        ip_list.remove(POD_IP)
-        """
+        
         print("Got %d other pod ip's" % (len(ip_list)))
         
         # Get ID's of other pods by sending a GET request to them
@@ -152,8 +140,11 @@ async def start_election():
                     
 
 async def leader_get(request):
-    if(not leader == None):
-        response_data = {"pod_id": leader}
+    if (leader == POD_ID):
+        response_data = {"pod_id": POD_ID, "pod_ip": POD_IP}
+    elif(not leader == None):
+        pod_ip = {ip: pod["pod_ip"] for ip, pod in other_pods.items() if pod['id'] == POD_ID}
+        response_data = {"pod_id": leader, "pod_ip": pod_ip}
     else:
         response_data = "No leader elected yet"
     return web.json_response(response_data)
@@ -210,6 +201,8 @@ async def announce_leader():
             except aiohttp.ClientError as e:
                 print(f"Error connecting to {url}: {e}")
                 
+                
+
 async def disable_pod():
     global ACTIVE
     ACTIVE = False
@@ -223,13 +216,3 @@ async def background_tasks(app):
     yield
     task.cancel()
     await task
-"""""
-if __name__ == "__main__":
-    app = web.Application()
-    app.router.add_get('/pod_id', pod_id)
-    app.router.add_post('/receive_answer', receive_answer)
-    app.router.add_post('/receive_election', receive_election)
-    app.router.add_post('/receive_coordinator', receive_coordinator)
-    app.cleanup_ctx.append(background_tasks)
-    web.run_app(app, host='0.0.0.0', port=WEB_PORT)
-"""""

@@ -30,12 +30,12 @@ After the Docker image has been built successfully, configure `kubectl` to use t
 kubectl config use-context docker-desktop
 ```
 ### 4. Apply Kubernetes Configurations
-Next, apply the Kubernetes configuration files to set up the service and deployment:
+Next, apply the Kubernetes configuration files to set up the service and statefulset:
 ```
 kubectl apply -f ./k8s/headless-service.yaml
 ```
 ```
-kubectl apply -f ./k8s/deployment.yaml
+kubectl apply -f ./k8s/statefulset.yaml
 ```
 
 ### 5. Set Up the Ingress Controller (Only if Not Already Installed)
@@ -62,6 +62,7 @@ kubectl get deployment -n ingress-nginx
 To verify if everything is running as expected, check the status of the pods:
 ```
 kubectl get pods
+There should by default be 3 pods {bully-app-0, bully-app-1, bully-app-3}
 ```
 ### 6. Troubleshooting
 If there are any issues, you can check the logs of the individual pods to see what might be wrong. Use the following command to retrieve the logs for a specific pod:
@@ -80,12 +81,12 @@ Once everything is running correctly, you can access the application directly in
 To scale the number of replicas in the deployment, use the following command:
 
 ```
-kubectl scale deployment bully-app --replicas=<desired_number_of_replicas>
+kubectl scale statefulsets bully-app --replicas=<desired_number_of_replicas>
 ```
 ### 10. Stopping and Deleting the Application
 To stop the application and delete the deployment, use the following command:
 ```
-kubectl delete -f ./k8s/deployment.yaml
+kubectl delete -f ./k8s/statefulset.yaml
 ```
 To clean up everything created by Kubernetes (including the service, ingress, and deployment), use:
 
@@ -127,33 +128,22 @@ kubectl get pods
 cd ..
 ```
 ### Simulate Pod Failure
-1. Set up as before, but delete the deployment and apply the StatefulSet configuration:
-```
-kubectl delete -f ./k8s/deployment.yaml
-kubectl apply -f ./k8s/statefulset.yaml
-```
-2. Check the status of your pods:
+1. Set up a deseired amount of pods and check the pods are running:
 ```
 kubectl get pods
+They should have names like 'bully-app-0' with the number going up to N-1 for N replicas
 ```
-3. kubectl get pods
+2. In Docker desktop or through the logs command observe the bully algorithm process in the pods
 ```
-kubectl get pods
-````
+kubectl logs <pod-name>
+```
+3. Locate the leader pod and delete it
+```
 kubectl delete pod <pod_name>
 ```
-4. Watch the change in leadership in Docker Desktop.
-5. After simulating the pod failure, return to the previous setup by doing the following:
-- Delete the StatefulSet:
-```
-kubectl delete -f ./k8s/statefulset.yaml
-```
-- Apply the deployment configuration again:
-```
-kubectl apply -f ./k8s/deployment.yaml
-```
+4. A new pod will be created. Watch the change in leadership in Docker Desktop.
 
----
+
 
 - Ensure that Kubernetes is running properly on Docker Desktop and that `kubectl` is correctly configured.
 - The Ingress setup replaces the need for `kubectl port-forward`, making it easier to access the application via `localhost`.
