@@ -20,7 +20,11 @@ spec:
           env:
             - name: WEB_PORT
               value: "8080"
-            - name: POD_ID
+            #- name: POD_ID
+            # valueFrom:
+            #  fieldRef:
+            #  fieldPath: metadata.name
+            - name: POD_IP
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.name

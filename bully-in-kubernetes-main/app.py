@@ -2,8 +2,7 @@ from aiohttp import web
 import asyncio
 from asyncio import to_thread
 from fortune_service import get_random_fortune
-from bully_algorithm import run_bully, receive_coordinator, background_tasks, pod_id, announce_leader, receive_election, leader_get, health_check
-
+from bully_algorithm import run_bully, receive_coordinator, background_tasks, pod_id, announce_leader, receive_election, leader_get, health_check, disable_pod, activate_pod
 # Create an aiohttp web app
 app = web.Application()
 
