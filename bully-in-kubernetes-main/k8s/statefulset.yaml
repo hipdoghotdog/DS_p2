@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: bully-app
+spec:
+  serviceName: bully-service
+  replicas: 3
+  selector:
+    matchLabels:
+      app: bully-app
+  template:
+    metadata:
+      labels:
+        app: bully-app
+    spec:
+      containers:
+        - name: bully-container
+          image: bully-app
+          imagePullPolicy: Never
+          env:
+            - name: WEB_PORT
+              value: "8080"
+            - name: POD_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+          ports:
+            - containerPort: 8080
+              name: http

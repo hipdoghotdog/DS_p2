@@ -8,9 +8,12 @@ import aiohttp
 import requests
 import random
 
-POD_IP = str(os.environ['POD_IP'])
-WEB_PORT = int(os.environ['WEB_PORT'])
+POD_IP = str(os.environ.get('POD_IP', '0.0.0.0'))
+WEB_PORT = int(os.environ.get('WEB_PORT', 8080))
 POD_ID = random.randint(0, 100)
+STATEFULSET_NAME = os.environ.get('STATEFULSET_NAME', 'bully-app')
+NAMESPACE = os.environ.get('POD_NAMESPACE', 'default')
+REPLICAS = int(os.environ.get('REPLICAS', 3))
 
 ip_list = []
 other_pods = dict()
@@ -21,6 +24,13 @@ async def setup_k8s():
     # If you need to do setup of Kubernetes, i.e. if using Kubernetes Python client
 	print("K8S setup completed")
  
+async def setup_pod_list():
+    global ip_list
+    for i in range(REPLICAS):
+        ip_list = [f"{STATEFULSET_NAME}-{i}.bully-service.{NAMESPACE}.svc.cluster.local"]
+    ip_list = [ip for ip in ip_list if ip != POD_IP]
+    
+ 
 async def run_bully():
     #ip_list = []
     #other_pods = dict()
@@ -30,9 +40,11 @@ async def run_bully():
         
         # Get all pods doing bully
         global ip_list
-        
+        await setup_pod_list()
         print("Making a DNS lookup to service")
+        """""""""
         response = socket.getaddrinfo("bully-service",0,0,0,0)
+        print(response)
         print("Get response from DNS")
         for result in response:
             ip_list.append(result[-1][0])
@@ -40,6 +52,7 @@ async def run_bully():
         
         # Remove own POD ip from the list of pods
         ip_list.remove(POD_IP)
+        """
         print("Got %d other pod ip's" % (len(ip_list)))
         
         # Get ID's of other pods by sending a GET request to them
@@ -57,6 +70,7 @@ async def run_bully():
                             other_pods[pod_ip] = await response.json()
                         else:
                             print(f"Failed to get response from {url}, status: {response.status}")
+                            ip_list.remove(pod_ip)
                 except aiohttp.ClientError as e:
                     print(f"Error connecting to {url}: {e}")
                 
@@ -68,8 +82,7 @@ async def run_bully():
         if(not higher_priority_pods and not elec_in_prog and not leader == POD_IP):
             await start_election()
         
-        
-        await asyncio.sleep(5)
+        await asyncio.sleep(1)
         random_pod = random.choice(ip_list)
         print(f"Sending health check to pod {random_pod}.")
         async with aiohttp.ClientSession() as session:
@@ -90,6 +103,8 @@ async def run_bully():
         await asyncio.sleep(10)
         if(leader == None):
             await start_election()
+            
+
         
 async def start_election():
     print("Starting election")
