@@ -1,0 +1,13 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: statefulset-reader-binding
+  namespace: default # Replace with your namespace if not "default"
+subjects:
+  - kind: ServiceAccount
+    name: default # Replace this with the name of your ServiceAccount if using a custom one
+    namespace: default # Replace with your namespace
+roleRef:
+  kind: Role
+  name: statefulset-reader # This should match the name of the Role you created above
+  apiGroup: rbac.authorization.k8s.io

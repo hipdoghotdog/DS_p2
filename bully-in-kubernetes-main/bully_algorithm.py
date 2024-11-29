@@ -13,7 +13,8 @@ WEB_PORT = int(os.environ['WEB_PORT'])
 POD_ID = random.randint(0, 100)
 STATEFULSET_NAME = os.environ.get('STATEFULSET_NAME', 'bully-app')
 NAMESPACE = os.environ.get('POD_NAMESPACE', 'default')
-REPLICAS = int(os.environ.get('REPLICAS', 3))
+REPLICAS = int(os.environ.get('REPLICAS',3))
+
 ACTIVE = True
 ip_list = []
 other_pods = dict()
@@ -23,9 +24,12 @@ elec_in_prog = False
  
 async def setup_pod_list():
     global ip_list
+    replicas = await get_current_replicas_http(STATEFULSET_NAME)
+    if replicas is None:
+        replicas = REPLICAS
     ip_list = [
         f"{STATEFULSET_NAME}-{i}.bully-service.{NAMESPACE}.svc.cluster.local"
-        for i in range(REPLICAS)
+        for i in range(replicas)
     ]
     ip_list = [ip for ip in ip_list if not ip.startswith(POD_IP)]
     
@@ -237,6 +241,30 @@ async def reset(request):
     return web.json_response({"message": f"Pod {POD_ID} is now active."})
     
     
+async def get_current_replicas_http(statefulset_name, namespace="default"):
+    """Fetch the current replicas using direct HTTP request."""
+    try:
+        # Read service account token
+        with open("/var/run/secrets/kubernetes.io/serviceaccount/token", "r") as f:
+            token = f.read()
+
+        # Kubernetes API URL
+        api_server = os.getenv("KUBERNETES_SERVICE_HOST", "kubernetes.default.svc")
+        url = f"https://{api_server}/apis/apps/v1/namespaces/{namespace}/statefulsets/{statefulset_name}"
+
+        # Send GET request
+        headers = {"Authorization": f"Bearer {token}"}
+        response = requests.get(url, headers=headers, verify="/var/run/secrets/kubernetes.io/serviceaccount/ca.crt")
+
+        if response.status_code == 200:
+            statefulset = response.json()
+            return statefulset["status"]["replicas"]
+        else:
+            print(f"Failed to fetch replicas: {response.status_code}, {response.text}")
+            return None
+    except Exception as e:
+        print(f"Error fetching replicas: {e}")
+        return None
 
 
 async def background_tasks(app):
