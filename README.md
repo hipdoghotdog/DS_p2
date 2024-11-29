@@ -62,8 +62,9 @@ kubectl get deployment -n ingress-nginx
 To verify if everything is running as expected, check the status of the pods:
 ```
 kubectl get pods
-There should by default be 3 pods {bully-app-0, bully-app-1, bully-app-3}
 ```
+There should by default be 3 pods ´{bully-app-0, bully-app-1, bully-app-3}´ 
+
 ### 6. Troubleshooting
 If there are any issues, you can check the logs of the individual pods to see what might be wrong. Use the following command to retrieve the logs for a specific pod:
 ```
@@ -127,12 +128,14 @@ kubectl get pods
 ```
 cd ..
 ```
-### Simulate Pod Failure 1
+### Simulate Pod Failure
 1. Set up a deseired amount of pods and check the pods are running:
 ```
 kubectl get pods
-They should have names like 'bully-app-0' with the number going up to N-1 for N replicas
 ```
+They should have names like 'bully-app-0' with the number going up to N-1 for N replicas
+
+
 2. In Docker desktop or through the logs command observe the bully algorithm process in the pods
 ```
 kubectl logs <pod-name>
@@ -143,20 +146,6 @@ kubectl delete pod <pod_name>
 ```
 4. A new pod will be created. Watch the change in leadership in Docker Desktop.
 
-### Simulate Pod failure 2 
-1. Setup the pods like explained earlier
-2. Instead of deleting pods we will be disabling the leader
-- Find which pod is the leader as described earlier
-- Either in the terminal or in docker desktop enter the pod's command line
-- Run this command
-    - curl -X POST http://<bully-app-x>:8080/disable_leader
-        - replace the 'x' with the relevant number of the pod
-3. Now the leader is disabled, observe the other pods
-- The pods run health checks on eachother regularly, this way they can discover the leader is disabled
-4. If you want to restore the pod
-- Run this command
-    - curl -X POST http://<bully-app-x>:8080/reset
-    - The pod should start an election and become leader again
 
 
 - Ensure that Kubernetes is running properly on Docker Desktop and that `kubectl` is correctly configured.
