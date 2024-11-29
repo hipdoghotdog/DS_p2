@@ -35,6 +35,12 @@ Next, apply the Kubernetes configuration files to set up the service and statefu
 kubectl apply -f ./k8s/headless-service.yaml
 ```
 ```
+kubectl apply -f .\k8s\statefulsets-role.yaml
+```
+```
+kubectl apply -f .\k8s\stateful-binding.yaml
+```
+```
 kubectl apply -f ./k8s/statefulset.yaml
 ```
 
