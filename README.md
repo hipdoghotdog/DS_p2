@@ -28,6 +28,27 @@ kubectl apply -f ./k8s/headless-service.yaml
 ```
 kubectl apply -f ./k8s/deployment.yaml
 ```
+
+### 5. Set Up the Ingress Controller (Only if Not Already Installed)
+If you don't already have the Ingress controller set up, follow these steps:
+
+- Apply the Ingress resource:
+
+```
+kubectl apply -f ./k8s/ingress.yaml
+
+```
+
+- Deploy the NGINX ingress controller:
+```
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/cloud/deploy.yaml
+```
+
+- Verify the Ingress controller is running:
+```
+kubectl get deployment -n ingress-nginx
+```
+
 ### 5. Check the Pods
 To verify if everything is running as expected, check the status of the pods:
 ```
@@ -42,25 +63,31 @@ If the pod is not running, you can describe the pod to get more detailed status 
 ```
 kubectl describe pod <pod_name>
 ```
-### 7. Accessing the Application
-Once everything is running correctly, you can access the application via port-forwarding:
-```
-kubectl port-forward pod/<pod_name> 8080:8080
-```
-This will allow you to access the app in your browser at `http://localhost:8080`.
 
-### 8. Scaling the Deployment
+### 8. Accessing the Application
+Once everything is running correctly, you can access the application directly in your browser at [http://localhost](http://localhost), thanks to the Ingress configuration.
+
+### 9. Scaling the Deployment
 To scale the number of replicas in the deployment, use the following command:
+
 ```
 kubectl scale deployment bully-app --replicas=<desired_number_of_replicas>
 ```
-### 9. Stopping the Application
-When you're done, you can stop the application by scaling the deployment to zero replicas:
+### 10. Stopping and Deleting the Application
+To stop the application and delete the deployment, use the following command:
 ```
-kubectl scale deployment bully-app --replicas=0
+kubectl delete -f ./k8s/deployment.yaml
 ```
+To clean up everything created by Kubernetes (including the service, ingress, and deployment), use:
+
+```
+kubectl delete -f ./k8s/
+```
+
 ---
 
 ### Additional Notes
+- Ensure that Kubernetes is running properly on Docker Desktop and that `kubectl` is correctly configured.
+- The Ingress setup replaces the need for `kubectl port-forward`, making it easier to access the application via `localhost`.
 - If you encounter any issues with the Kubernetes setup or Docker build, check the logs for more specific error messages.
 
